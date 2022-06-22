@@ -3,7 +3,71 @@ use std::io::{Read};
 use std::env;
 // use std::path::PathBuf;
 
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+
 use std::str;
+
+#[derive(FromPrimitive, Debug)]
+pub enum DestinationCode {
+    Japanese = 0x00,
+    NonJapanese = 0x01,
+    Unknown = 0xFF,
+}
+
+#[derive(FromPrimitive, Debug)]
+pub enum CartridgeType {
+    RomOnly = 0x00,
+    Mbc1 = 0x01,
+    Mbc1Ram = 0x02,
+    Mbc1RamBattery = 0x03,
+    Mbc2 = 0x05,
+    Mbc2Battery = 0x06,
+    RomRam = 0x08,
+    RomRamBattery = 0x09,
+    Mmm01 = 0x0b,
+    Mmm01Ram = 0x0c,
+    Mmm01RamBattery = 0x0d,
+    Mbc3 = 0x11,
+    Mbc3Ram = 0x12,
+    Mbc3RamBattery = 0x13,
+}
+
+impl CartridgeType {
+    fn as_str(&self) -> &'static str {
+        match self {
+            CartridgeType::RomOnly => "ROM ONLY",
+            CartridgeType::Mbc1 => "MBC1",
+            CartridgeType::Mbc1Ram => "MBC1+RAM",
+            CartridgeType::Mbc1RamBattery => "MBC1+RAM+BATTERY",
+            CartridgeType::Mbc2 => "MBC2",
+            CartridgeType::Mbc2Battery => "MBC2+BATTERY",
+            CartridgeType::RomRam => "ROM+RAM",
+            CartridgeType::RomRamBattery => "ROM+RAM+BATTERY",
+            CartridgeType::Mmm01 => "MMM01",
+            CartridgeType::Mmm01Ram => "MMM01+RAM",
+            CartridgeType::Mmm01RamBattery => "MMM01+RAM+BATTERY",
+            CartridgeType::Mbc3 => "MBC3",
+            CartridgeType::Mbc3Ram => "MBC3+RAM",
+            CartridgeType::Mbc3RamBattery => "MBC3+RAM+BATTERY",
+            //     0x0f => "MBC3+TIMER+BATTERY",
+            //     0x10 => "MBC3+TIMER+RAM+BATTERY",
+            //     0x19 => "MBC5",
+            //     0x1a => "MBC5+RAM",
+            //     0x1b => "MBC5+RAM+BATTERY",
+            //     0x1c => "MBC5+RUMBLE",
+            //     0x1d => "MBC5+RUMBLE+RAM",
+            //     0x1e => "MBC5+RUMBLE+RAM+BATTERY",
+            //     0x20 => "MBC6",
+            //     0x22 => "MBC7+SENSOR+RUMBLE+RAM+BATTERY",
+            //     0xfc => "POCKET CAMERA",
+            //     0xfd => "BANDAI TAMA5",
+            //     0xfe => "HuC3",
+            //     0xff => "HuC1+RAM+BATTERY",
+            //     _ => "Unknown",
+        }
+    }
+}
 
 pub struct Cartridge {
     pub entry_point: Vec<u8>,
@@ -11,10 +75,10 @@ pub struct Cartridge {
     pub title: Vec<u8>,
     // pub new_licensee_code: [u8; 2],
     pub sgb_flag: bool,
-    // pub mbc_type: MbcType,
+    pub cartridge_type: CartridgeType,
     pub rom_size: usize,
     pub ram_size: usize,
-    // // pub destination_code: DestinationCode,
+    pub destination_code: DestinationCode,
     // pub old_licensee_code: u8,
     // pub mask_rom_version_number: u8,
     // pub header_checksum: u8,
@@ -28,13 +92,18 @@ impl Cartridge {
         let mut file = File::open(fname).unwrap();
         file.read_to_end(&mut rom).unwrap();
 
+        // 0147 - Cartridge Type
+        // let rrom = FromPrimitive::from_u8(rom[0x0147]);
+        
         Cartridge {
             entry_point: Cartridge::entry_point(&rom),
             logo: Cartridge::logo(&rom),
             sgb_flag: Cartridge::sgb_flag(&rom),
+            cartridge_type: Cartridge::cartridge_type(&rom),
             title: Cartridge::title(&rom),
             rom_size: Cartridge::rom_size(&rom),
             ram_size: Cartridge::ram_size(&rom),
+            destination_code: Cartridge::destination_code(&rom),
         }
     }
 
@@ -65,7 +134,23 @@ impl Cartridge {
     }
 
     // 0147 - Cartridge Type
+    fn cartridge_type(rom: &Vec<u8>) -> CartridgeType {
+        if let Some(cartridge_type) = FromPrimitive::from_u8(rom[0x0147]) {
+            cartridge_type
+        } else {
+            CartridgeType::RomOnly
+        }
+    }
+
     // 014A - Destination Code
+    fn destination_code(rom: &Vec<u8>) -> DestinationCode {
+        if let Some(destination_code) = FromPrimitive::from_u8(rom[0x014A]) {
+            destination_code
+        } else {
+            DestinationCode::Unknown
+        }
+    }
+
     // 014B - Old Licensee Code
     // 014C - Mask ROM Version number
     // 014D - Header Checksum
@@ -114,60 +199,6 @@ impl Cartridge {
     }
 }
 
-#[derive(Debug)]
-pub enum MbcType {
-    RomOnly = 0x00,
-    Mbc1 = 0x01,
-    Mbc1Ram = 0x02,
-    Mbc1RamBattery = 0x03,
-    Mbc2 = 0x05,
-    Mbc2Battery = 0x06,
-    RomRam = 0x08,
-    RomRamBattery = 0x09,
-    Mmm01 = 0x0b,
-    Mmm01Ram = 0x0c,
-    Mmm01RamBattery = 0x0d,
-    Mbc3 = 0x11,
-    Mbc3Ram = 0x12,
-    Mbc3RamBattery = 0x13,
-}
-
-impl MbcType {
-    fn as_str(&self) -> &'static str {
-        match self {
-            MbcType::RomOnly => "ROM ONLY",
-            MbcType::Mbc1 => "MBC1",
-            MbcType::Mbc1Ram => "MBC1+RAM",
-            MbcType::Mbc1RamBattery => "MBC1+RAM+BATTERY",
-            MbcType::Mbc2 => "MBC2",
-            MbcType::Mbc2Battery => "MBC2+BATTERY",
-            MbcType::RomRam => "ROM+RAM",
-            MbcType::RomRamBattery => "ROM+RAM+BATTERY",
-            MbcType::Mmm01 => "MMM01",
-            MbcType::Mmm01Ram => "MMM01+RAM",
-            MbcType::Mmm01RamBattery => "MMM01+RAM+BATTERY",
-            MbcType::Mbc3 => "MBC3",
-            MbcType::Mbc3Ram => "MBC3+RAM",
-            MbcType::Mbc3RamBattery => "MBC3+RAM+BATTERY",
-            //     0x0f => "MBC3+TIMER+BATTERY",
-            //     0x10 => "MBC3+TIMER+RAM+BATTERY",
-            //     0x19 => "MBC5",
-            //     0x1a => "MBC5+RAM",
-            //     0x1b => "MBC5+RAM+BATTERY",
-            //     0x1c => "MBC5+RUMBLE",
-            //     0x1d => "MBC5+RUMBLE+RAM",
-            //     0x1e => "MBC5+RUMBLE+RAM+BATTERY",
-            //     0x20 => "MBC6",
-            //     0x22 => "MBC7+SENSOR+RUMBLE+RAM+BATTERY",
-            //     0xfc => "POCKET CAMERA",
-            //     0xfd => "BANDAI TAMA5",
-            //     0xfe => "HuC3",
-            //     0xff => "HuC1+RAM+BATTERY",
-            //     _ => "Unknown",
-        }
-    }
-}
-
 fn rom_fname() -> String {
     env::args().nth(1).unwrap()
 }
@@ -177,13 +208,11 @@ fn main() {
     // let mut fname = path_buf.to_str().unwrap().to_string();
     // println!("{}", path_buf.to_str().unwrap().to_string());
 
-    // let mut rom = Vec::new();
-    // let mut file = File::open(fname).unwrap();
-    // file.read_to_end(&mut rom).unwrap();
-
     let cartridge = Cartridge::new(&rom_fname());
+
     println!("{}", cartridge.title_to_string());
     println!("{}", cartridge.rom_to_string());
     println!("{}", cartridge.ram_to_string());
-    // println!("{:?}", MbcType::RomOnly);
+    println!("{:?}", cartridge.destination_code);
+    println!("{:?}", cartridge.cartridge_type);
 }
