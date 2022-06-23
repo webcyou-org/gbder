@@ -19,4 +19,8 @@ fn main() {
     println!("{:?}", cartridge.destination_code);
     println!("{:?}", cartridge.cartridge_type);
     println!("{:?}", cartridge.cartridge_type.as_str());
+    println!("{:?}", cartridge.new_licensee_code);
+    println!("{:?}", cartridge.old_licensee_code);
+    println!("{:?}", cartridge.mask_rom_version_number);
+    println!("{:?}", cartridge.header_checksum);
 }

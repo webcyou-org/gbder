@@ -86,15 +86,15 @@ pub struct Cartridge {
     pub entry_point: Vec<u8>,
     pub logo: Vec<u8>,
     pub title: Vec<u8>,
-    // pub new_licensee_code: [u8; 2],
+    pub new_licensee_code: Vec<u8>,
     pub sgb_flag: bool,
     pub cartridge_type: CartridgeType,
     pub rom_size: usize,
     pub ram_size: usize,
     pub destination_code: DestinationCode,
-    // pub old_licensee_code: u8,
-    // pub mask_rom_version_number: u8,
-    // pub header_checksum: u8,
+    pub old_licensee_code: u8,
+    pub mask_rom_version_number: u8,
+    pub header_checksum: u8,
     // pub global_checksum: [u8; 2],
     // pub data: Vec<u8>,
 }
@@ -108,12 +108,16 @@ impl Cartridge {
         Cartridge {
             entry_point: Cartridge::entry_point(&rom),
             logo: Cartridge::logo(&rom),
+            title: Cartridge::title(&rom),
+            new_licensee_code: Cartridge::new_licensee_code(&rom),
             sgb_flag: Cartridge::sgb_flag(&rom),
             cartridge_type: Cartridge::cartridge_type(&rom),
-            title: Cartridge::title(&rom),
             rom_size: Cartridge::rom_size(&rom),
             ram_size: Cartridge::ram_size(&rom),
             destination_code: Cartridge::destination_code(&rom),
+            old_licensee_code: Cartridge::old_licensee_code(&rom),
+            mask_rom_version_number: Cartridge::mask_rom_version_number(&rom),
+            header_checksum: Cartridge::header_checksum(&rom),
         }
     }
 
@@ -137,7 +141,16 @@ impl Cartridge {
 
     // 013F-0142 - Manufacturer Code
     // 0143 - CGB Flag
+
     // 0144-0145 - New Licensee Code
+    fn new_licensee_code(rom: &Vec<u8>) -> Vec<u8> {
+        let mut new_licensee_code = Vec::new();
+        for i in 0x0144..0x0145 {
+            new_licensee_code.push(rom[i]);
+        };
+        new_licensee_code
+    }    
+
     // 0146 - SGB Flag
     fn sgb_flag(rom: &Vec<u8>) -> bool {
         0x03 == rom[0x0146]
@@ -162,8 +175,27 @@ impl Cartridge {
     }
 
     // 014B - Old Licensee Code
+    fn old_licensee_code(rom: &Vec<u8>) -> u8 {
+        rom[0x014B]
+    }
+    
     // 014C - Mask ROM Version number
+    fn mask_rom_version_number(rom: &Vec<u8>) -> u8 {
+        rom[0x014C]
+    }
+
     // 014D - Header Checksum
+    fn header_checksum(rom: &Vec<u8>) -> u8 {
+        let mut checksum: u8 = 0;
+        for i in 0x0134..0x014d {
+            checksum = checksum.wrapping_sub(rom[i]).wrapping_sub(1);
+        }
+        if checksum != rom[0x014d] {
+            panic!("ROM header checksum is incorrect");
+        }
+        checksum
+    }
+
     // 014E-014F - Global Checksum
 
     // 0134-0143 - Title
