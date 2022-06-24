@@ -83,6 +83,8 @@ impl CartridgeType {
 }
 
 pub struct Cartridge {
+    pub rom: Vec<u8>,
+    pub ram: Vec<u8>,
     pub entry_point: Vec<u8>,
     pub logo: Vec<u8>,
     pub title: Vec<u8>,
@@ -96,7 +98,6 @@ pub struct Cartridge {
     pub mask_rom_version_number: u8,
     pub header_checksum: u8,
     // pub global_checksum: [u8; 2],
-    // pub data: Vec<u8>,
 }
 
 impl Cartridge {
@@ -105,7 +106,7 @@ impl Cartridge {
         let mut file = File::open(fname).unwrap();
         file.read_to_end(&mut rom).unwrap();
         
-        Cartridge {
+        Cartridge {            
             entry_point: Cartridge::entry_point(&rom),
             logo: Cartridge::logo(&rom),
             title: Cartridge::title(&rom),
@@ -118,8 +119,11 @@ impl Cartridge {
             old_licensee_code: Cartridge::old_licensee_code(&rom),
             mask_rom_version_number: Cartridge::mask_rom_version_number(&rom),
             header_checksum: Cartridge::header_checksum(&rom),
+            ram: vec![0; Cartridge::ram_size(&rom)],
+            rom: rom,
         }
     }
+
 
     // 0100-0103 - Entry Point
     fn entry_point(rom: &Vec<u8>) -> Vec<u8> {
