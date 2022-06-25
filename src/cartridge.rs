@@ -7,6 +7,8 @@ use num_traits::FromPrimitive;
 
 use std::str;
 
+use crate::bus::Bus;
+
 #[derive(FromPrimitive, Debug)]
 pub enum DestinationCode {
     Japanese = 0x00,
@@ -280,4 +282,51 @@ impl Cartridge {
             0
         }
     }
+}
+
+impl Bus for Cartridge {
+    fn write(&mut self, addr: u16, val: u8) {
+        match addr {
+            // RAM enable
+            0x0000..=0x1fff => self.ram_enable = val & 0x0f == 0x0a,
+            // ROM bank number (lower 5 bits)
+            0x2000..=0x3fff => self.bank_no_lower = val & 0x1f,
+            // RAM bank number or ROM bank number (upper 2 bits)
+            0x4000..=0x5fff => self.bank_no_upper = val & 0x03,
+            // ROM/RAM mode select
+            0x6000..=0x7fff => self.mode = val & 0x01 > 0,
+            // RAM bank 00-03
+            0xa000..=0xbfff => {
+                if !self.ram_enable {
+                    return;
+                }
+                let offset = (8 * 1024) * self.ram_bank_no() as usize;
+                self.ram[(addr & 0x1fff) as usize + offset] = val
+            }
+            _ => unreachable!("Unexpected address: 0x{:04x}", addr),
+        }
+    }
+
+    fn read(&self, addr: u16) -> u8 {
+        match addr {
+            // ROM bank 00
+            0x0000..=0x3fff => self.rom[addr as usize],
+            // ROM bank 01-7f
+            0x4000..=0x7fff => {
+                let offset = (16 * 1024) * self.rom_bank_no() as usize;
+                self.rom[(addr & 0x3fff) as usize + offset]
+            }
+            // RAM bank 00-03
+            0xa000..=0xbfff => {
+                if !self.ram_enable {
+                    return 0xff;
+                }
+                let offset = (8 * 1024) * self.ram_bank_no() as usize;
+                self.ram[(addr & 0x1fff) as usize + offset]
+            }
+            _ => unreachable!("Unexpected address: 0x{:04x}", addr),
+        }
+    }
+
+    fn update(&mut self, _tick: u8) {}
 }
