@@ -97,7 +97,12 @@ pub struct Cartridge {
     pub old_licensee_code: u8,
     pub mask_rom_version_number: u8,
     pub header_checksum: u8,
+    pub rom_banks_amount: u8,
     // pub global_checksum: [u8; 2],
+    pub ram_enable: bool,
+    pub bank_no_upper: u8,
+    pub bank_no_lower: u8,
+    pub mode: bool,
 }
 
 impl Cartridge {
@@ -119,8 +124,13 @@ impl Cartridge {
             old_licensee_code: Cartridge::old_licensee_code(&rom),
             mask_rom_version_number: Cartridge::mask_rom_version_number(&rom),
             header_checksum: Cartridge::header_checksum(&rom),
+            rom_banks_amount: Cartridge::rom_banks_amount(&rom),
             ram: vec![0; Cartridge::ram_size(&rom)],
             rom: rom,
+            ram_enable: false,
+            bank_no_upper: 0,
+            bank_no_lower: 0,
+            mode: false,
         }
     }
 
@@ -223,6 +233,10 @@ impl Cartridge {
         }
     }
 
+    fn rom_banks_amount(rom: &Vec<u8>) -> u8 {
+        2 << rom[0x0148]
+    }
+
     pub fn rom_to_string(&self) -> String {
         format!("ROM size {}KB", self.rom_size / 1024)
     }
@@ -242,5 +256,28 @@ impl Cartridge {
 
     pub fn ram_to_string(&self) -> String {
         format!("RAM size {}KB", self.ram_size / 1024)
+    }
+
+    fn rom_bank_no(&self) -> u8 {
+        let bank_no = if self.mode {
+            self.bank_no_lower
+        } else {
+            self.bank_no_upper << 5 | self.bank_no_lower
+        };
+
+        let bank_no = match bank_no {
+            0 | 0x20 | 0x40 | 0x60 => bank_no + 1,
+            _ => bank_no,
+        };
+
+        bank_no & (self.rom_banks_amount - 1)
+    }
+
+    fn ram_bank_no(&self) -> u8 {
+        if self.mode {
+            self.bank_no_upper
+        } else {
+            0
+        }
     }
 }

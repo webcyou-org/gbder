@@ -23,4 +23,6 @@ fn main() {
     println!("{:?}", cartridge.old_licensee_code);
     println!("{:?}", cartridge.mask_rom_version_number);
     println!("{:?}", cartridge.header_checksum);
+    println!("{:?}", cartridge.rom_banks_amount);
+
 }
