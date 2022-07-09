@@ -23,9 +23,6 @@ fn main() {
     // let mmu: MMU = MMU::new(&rom_fname());
     let mut cpu: CPU = CPU::new(&rom_fname());
 
-    let tick = cpu.step();
-
-    println!("{}", tick);
     println!("{}", cpu.mmu.cartridge.title_to_string());
     println!("{}", cpu.mmu.cartridge.rom_to_string());
     println!("{}", cpu.mmu.cartridge.ram_to_string());
@@ -38,4 +35,5 @@ fn main() {
     println!("{:?}", cpu.mmu.cartridge.header_checksum);
     println!("{:?}", cpu.mmu.cartridge.rom_banks_amount);
 
+    cpu.debug();
 }
