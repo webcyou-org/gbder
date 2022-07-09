@@ -30,4 +30,9 @@ impl CPU {
             l: 0,
         }
     }
+
+    pub fn step(&mut self) -> u8 {
+        self.mmu.update(0);
+        0
+    }
 }

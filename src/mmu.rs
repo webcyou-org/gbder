@@ -73,4 +73,8 @@ impl MMU {
             _ => 0xff,
         }
     }
+
+    pub fn update(&mut self, tick: u8) {
+        println!("{}", tick);
+    }
 }

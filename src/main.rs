@@ -21,8 +21,11 @@ fn main() {
 
     // let cartridge = Cartridge::new(&rom_fname());
     // let mmu: MMU = MMU::new(&rom_fname());
-    let cpu: CPU = CPU::new(&rom_fname());
+    let mut cpu: CPU = CPU::new(&rom_fname());
 
+    let tick = cpu.step();
+
+    println!("{}", tick);
     println!("{}", cpu.mmu.cartridge.title_to_string());
     println!("{}", cpu.mmu.cartridge.rom_to_string());
     println!("{}", cpu.mmu.cartridge.ram_to_string());
