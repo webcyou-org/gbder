@@ -12,6 +12,7 @@ pub struct CPU {
     e: u8,
     h: u8,
     l: u8,
+    cycle: u8,
 }
 
 impl CPU {
@@ -28,6 +29,7 @@ impl CPU {
             e: 0,
             h: 0,
             l: 0,
+            cycle: 0,
         }
     }
 
@@ -110,6 +112,105 @@ impl CPU {
     pub fn step(&mut self) -> u8 {
         self.mmu.update(0);
         0
+    }
+
+    // 8-bit operand
+    fn write_r8(&mut self, idx: u8, val: u8) {
+        match idx {
+            0 => self.b = val,
+            1 => self.c = val,
+            2 => self.d = val,
+            3 => self.e = val,
+            4 => self.h = val,
+            5 => self.l = val,
+            6 => {
+                let hl = self.hl();
+                self.write_mem8(hl, val);
+            }
+            7 => self.a = val,
+            _ => panic!("Invalid operand index: {}", idx),
+        }
+    }
+
+    fn read_r8(&mut self, idx: u8) -> u8 {
+        match idx {
+            0 => self.b,
+            1 => self.c,
+            2 => self.d,
+            3 => self.e,
+            4 => self.h,
+            5 => self.l,
+            6 => {
+                let hl = self.hl();
+                self.read_mem8(hl)
+            }
+            7 => self.a,
+            _ => panic!("Invalid operand index: {}", idx),
+        }
+    }
+
+    // 16-bit operand
+    fn write_r16(&mut self, idx: u8, val: u16) {
+        match idx {
+            0 => self.set_bc(val),
+            1 => self.set_de(val),
+            2 => self.set_hl(val),
+            3 => self.sp = val,
+            _ => panic!("Invalid operand index: {}", idx),
+        }
+    }
+
+    fn read_r16(&mut self, idx: u8) -> u16 {
+        match idx {
+            0 => self.bc(),
+            1 => self.de(),
+            2 => self.hl(),
+            3 => self.sp,
+            _ => panic!("Invalid operand index: {}", idx),
+        }
+    }
+
+    // 8-bit immediate memory
+    fn read_d8(&mut self) -> u8 {
+        let pc = self.pc;
+        let imm = self.read_mem8(pc);
+        self.pc = self.pc.wrapping_add(1);
+
+        imm
+    }
+
+    // 16-bit immediate memory
+    fn read_d16(&mut self) -> u16 {
+        let pc = self.pc;
+        let imm = self.read_mem16(pc);
+        self.pc = self.pc.wrapping_add(2);
+
+        imm
+    }
+
+    // 8-bit value memory
+    fn write_mem8(&mut self, addr: u16, val: u8) {
+        self.mmu.write(addr, val);
+        self.cycle += 4;
+    }
+
+    fn read_mem8(&mut self, addr: u16) -> u8 {
+        let ret = self.mmu.read(addr);
+        self.cycle += 4;
+        ret
+    }
+
+    // 16-bit value memory
+    fn write_mem16(&mut self, addr: u16, val: u16) {
+        self.write_mem8(addr, (val & 0xff) as u8);
+        self.write_mem8(addr.wrapping_add(1), (val >> 8) as u8);
+    }
+
+    fn read_mem16(&mut self, addr: u16) -> u16 {
+        let lo = self.read_mem8(addr);
+        let hi = self.read_mem8(addr.wrapping_add(1));
+
+        (hi as u16) << 8 | lo as u16
     }
 
     pub fn debug(&mut self) {
