@@ -74,7 +74,7 @@ impl MMU {
         }
     }
 
-    pub fn update(&mut self, tick: u8) {
-        println!("{}", tick);
+    pub fn update(&mut self, cycle: u8) {
+        self.cartridge.update(cycle);
     }
 }

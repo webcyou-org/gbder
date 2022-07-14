@@ -110,8 +110,13 @@ impl CPU {
     }
 
     pub fn step(&mut self) -> u8 {
-        self.mmu.update(0);
-        0
+        let mut total_cycle = 0;
+
+        total_cycle += self.cycle;
+
+        self.mmu.update(self.cycle);
+        
+        total_cycle
     }
 
     // 8-bit operand
@@ -213,11 +218,23 @@ impl CPU {
         (hi as u16) << 8 | lo as u16
     }
 
+    fn fetch_and_exec(&mut self) {
+        let opcode = self.read_d8();
+        let reg = opcode & 7;
+        let reg2 = opcode >> 3 & 7;
+
+        println!("opcode: {:?}", opcode);
+        println!("reg: {:?}", reg);
+        println!("reg2: {:?}", reg2);
+    }
+
     pub fn debug(&mut self) {
         // self.set_af(0x10ff);
         // self.set_f_z(true);
         // self.set_f_n(true);
-        self.set_f_c(true); 
+        // self.set_f_c(true); 
+
+        self.fetch_and_exec();
 
         println!("af: {:?}", self.af());
         println!("a: {:?}", self.a);
@@ -236,7 +253,7 @@ impl CPU {
         println!("flag c: {:?}", self.f_c());
         println!("flag h: {:?}", self.f_h());
 
-        let tick = self.step();
-        println!("tick: {}", tick);
+        // let tick = self.step();
+        // println!("tick: {}", tick);
     }
 }
