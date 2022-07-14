@@ -282,6 +282,20 @@ impl Cartridge {
             0
         }
     }
+
+    pub fn debug(&mut self) {
+        println!("{}", self.title_to_string());
+        println!("{}", self.rom_to_string());
+        println!("{}", self.ram_to_string());
+        println!("{:?}", self.destination_code);
+        println!("{:?}", self.cartridge_type);
+        println!("{:?}", self.cartridge_type.as_str());
+        println!("{:?}", self.new_licensee_code);
+        println!("{:?}", self.old_licensee_code);
+        println!("{:?}", self.mask_rom_version_number);
+        println!("{:?}", self.header_checksum);
+        println!("{:?}", self.rom_banks_amount);
+    }
 }
 
 impl Bus for Cartridge {

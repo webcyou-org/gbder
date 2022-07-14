@@ -111,7 +111,6 @@ impl CPU {
 
     pub fn step(&mut self) -> u8 {
         let mut total_cycle = 0;
-
         total_cycle += self.cycle;
 
         self.mmu.update(self.cycle);
