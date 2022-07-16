@@ -29,4 +29,27 @@ fn main() {
     println!("now: {:?}", now);
 
     cpu.debug();
+    cpu.debug();
+    cpu.debug();
+    cpu.debug();
+    cpu.debug();
+
+    standby(&mut cpu);
+}
+
+fn standby(cpu: &mut CPU) {
+    let mut word = String::new();
+    std::io::stdin().read_line(&mut word).ok();
+    let answer = word.trim().to_string();
+
+    println!("step to n key press");
+
+    match &*answer {
+        "n" => {
+            println!("------------cpu step debug----------------");
+            cpu.debug();
+            standby(cpu);
+        },
+        _ => println!("------------cpu step debug end----------------"),
+    }
 }

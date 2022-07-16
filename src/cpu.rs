@@ -13,6 +13,7 @@ pub struct CPU {
     h: u8,
     l: u8,
     cycle: u8,
+    halted: bool,
 }
 
 impl CPU {
@@ -30,6 +31,7 @@ impl CPU {
             h: 0,
             l: 0,
             cycle: 0,
+            halted: false,
         }
     }
 
@@ -225,6 +227,10 @@ impl CPU {
         println!("opcode: {:?}", opcode);
         println!("reg: {:?}", reg);
         println!("reg2: {:?}", reg2);
+    }
+
+    fn halt(&mut self) {
+        self.halted = true;
     }
 
     pub fn debug(&mut self) {
