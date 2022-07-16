@@ -12,6 +12,7 @@ pub struct CPU {
     e: u8,
     h: u8,
     l: u8,
+    ime: bool, // IME - 割り込み有効フラグ (Interrupt Master Enable Flag)
     cycle: u8,
     halted: bool,
 }
@@ -30,6 +31,7 @@ impl CPU {
             e: 0,
             h: 0,
             l: 0,
+            ime: false,
             cycle: 0,
             halted: false,
         }
@@ -113,10 +115,24 @@ impl CPU {
 
     pub fn step(&mut self) -> u8 {
         let mut total_cycle = 0;
+        self.cycle = 0;
+
+        if self.halted {
+            self.cycle += 4;
+        } else {
+            self.fetch_and_exec();
+        }
+
         total_cycle += self.cycle;
 
         self.mmu.update(self.cycle);
-        
+
+        if self.ime {
+            self.cycle = 0;
+            // self.check_irqs();
+            self.mmu.update(self.cycle);
+            total_cycle += self.cycle;
+        }        
         total_cycle
     }
 
@@ -219,6 +235,25 @@ impl CPU {
         (hi as u16) << 8 | lo as u16
     }
 
+    /// LD r16, d16
+    fn ld_r16_d16(&mut self, reg: u8) {
+        let val = self.read_d16();    
+        self.write_r16(reg, val);
+    }
+
+    /// LD (d16), SP
+    fn ld_ind_d16_sp(&mut self) {
+        let addr = self.read_d16();
+        let sp = self.sp;
+        self.write_mem16(addr, sp);
+    }
+
+    /// LD SP, HL
+    fn ld_sp_hl(&mut self) {
+        self.cycle += 4;
+        self.sp = self.hl();
+    }
+
     fn fetch_and_exec(&mut self) {
         let opcode = self.read_d8();
         let reg = opcode & 7;
@@ -239,7 +274,7 @@ impl CPU {
         // self.set_f_n(true);
         // self.set_f_c(true); 
 
-        self.fetch_and_exec();
+        self.step();
 
         println!("af: {:?}", self.af());
         println!("a: {:?}", self.a);

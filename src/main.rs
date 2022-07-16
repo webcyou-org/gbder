@@ -38,11 +38,11 @@ fn main() {
 }
 
 fn standby(cpu: &mut CPU) {
+    println!("step to n key press");
+
     let mut word = String::new();
     std::io::stdin().read_line(&mut word).ok();
     let answer = word.trim().to_string();
-
-    println!("step to n key press");
 
     match &*answer {
         "n" => {
