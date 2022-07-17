@@ -287,6 +287,68 @@ impl CPU {
         self.sp.wrapping_add(val)
     }
 
+    // ADD SP, d8
+    fn add_sp_d8(&mut self) {
+        let val = self.read_d8() as i8;
+        self.sp = self._add_sp(val);
+        self.cycle += 8;
+    }
+
+    // LD HL, SP+d8
+    fn ld_hl_sp_d8(&mut self) {
+        let offset = self.read_d8() as i8;
+        self.cycle += 4;
+        let res = self._add_sp(offset);
+        self.set_hl(res);
+    }
+
+    // AND r8
+    fn and_r8(&mut self, reg: u8) {
+        let res = self.a & self.read_r8(reg);
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(true);
+        self.set_f_c(false);
+    }
+
+    // OR r8
+    fn or_r8(&mut self, reg: u8) {
+        let res = self.a | self.read_r8(reg);
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(false);
+    }
+
+    // XOR r8
+    fn xor_r8(&mut self, reg: u8) {
+        let res = self.a ^ self.read_r8(reg);
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(false);
+    }    
+
+    // CP r8
+    fn cp_r8(&mut self, reg: u8) {
+        let a = self.a;
+        let val = self.read_r8(reg);
+
+        self.set_f_z(a == val);
+        self.set_f_n(true);
+        self.set_f_h(a & 0x0f < val & 0x0f);
+        self.set_f_c(a < val);
+    }
+
     fn fetch_and_exec(&mut self) {
         let opcode = self.read_d8();
         let reg = opcode & 7;
