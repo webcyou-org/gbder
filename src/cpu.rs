@@ -235,23 +235,56 @@ impl CPU {
         (hi as u16) << 8 | lo as u16
     }
 
-    /// LD r16, d16
+    // NOP
+    fn nop(&mut self) {}
+
+    // LD r16, d16
     fn ld_r16_d16(&mut self, reg: u8) {
         let val = self.read_d16();    
         self.write_r16(reg, val);
+        println!("ld_r16_d16");
     }
 
-    /// LD (d16), SP
+    // LD (d16), SP
     fn ld_ind_d16_sp(&mut self) {
         let addr = self.read_d16();
-        let sp = self.sp;
-        self.write_mem16(addr, sp);
+        self.write_mem16(addr, self.sp);
     }
 
-    /// LD SP, HL
+    // LD SP, HL
     fn ld_sp_hl(&mut self) {
         self.cycle += 4;
         self.sp = self.hl();
+    }
+
+    // ADD HL, r16
+    fn add_hl_r16(&mut self, reg: u8) {
+        let hl = self.hl();
+        let val = self.read_r16(reg);
+
+        let half_carry = (hl & 0xfff) + (val & 0xfff) > 0xfff;
+        let (res, carry) = hl.overflowing_add(val);
+        self.set_hl(res);
+
+        self.cycle += 4;
+
+        self.set_f_n(false);
+        self.set_f_h(half_carry);
+        self.set_f_c(carry);
+    }
+
+    fn _add_sp(&mut self, offset: i8) -> u16 {
+        let val = offset as u16;
+
+        let half_carry = (self.sp & 0x0f) + (val & 0x0f) > 0x0f;
+        let carry = (self.sp & 0xff) + (val & 0xff) > 0xff;
+
+        self.set_f_z(false);
+        self.set_f_n(false);
+        self.set_f_h(half_carry);
+        self.set_f_c(carry);
+
+        self.sp.wrapping_add(val)
     }
 
     fn fetch_and_exec(&mut self) {
@@ -262,6 +295,15 @@ impl CPU {
         println!("opcode: {:?}", opcode);
         println!("reg: {:?}", reg);
         println!("reg2: {:?}", reg2);
+
+        match opcode {
+            // NOP
+            0x00 => self.nop(),
+            // LD r16, d16
+            0x01 | 0x11 | 0x21 | 0x31 => self.ld_r16_d16(opcode >> 4),
+            _ => println!("Unimplemented opcode"),
+            // _ => panic!("Unimplemented opcode 0x{:x}", opcode),
+        }
     }
 
     fn halt(&mut self) {
