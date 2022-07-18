@@ -501,6 +501,116 @@ impl CPU {
         self._sbc(val);
     }
 
+    // AND d8
+    fn and_d8(&mut self) {
+        let val = self.read_d8();
+        let res = self.a & val;
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(true);
+        self.set_f_c(false);
+    }
+
+    // OR d8
+    fn or_d8(&mut self) {
+        let val = self.read_d8();
+        let res = self.a | val;
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(false);
+    }    
+
+    // XOR d8
+    fn xor_d8(&mut self) {
+        let val = self.read_d8();
+        let res = self.a ^ val;
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(false);
+    }
+
+    // CP d8
+    fn cp_d8(&mut self) {
+        let imm = self.read_d8();
+        let a = self.a;
+
+        self.set_f_z(a == imm);
+        self.set_f_n(true);
+        self.set_f_h(a & 0x0f < imm & 0x0f);
+        self.set_f_c(a < imm);
+    }
+
+    // LD (HL+), A
+    fn ldi_hl_a(&mut self) {
+        let addr = self.hl();
+        let a = self.a;
+        self.write_mem8(addr, a);
+        let hl = self.hl();
+        self.set_hl(hl.wrapping_add(1));
+    }
+
+    // LD (HL-), A
+    fn ldd_hl_a(&mut self) {
+        let addr = self.hl();
+        let a = self.a;
+        self.write_mem8(addr, a);
+        let hl = self.hl();
+        self.set_hl(hl.wrapping_sub(1));
+    }
+
+    // LD A, (HL+)
+    fn ldi_a_hl(&mut self) {
+        let addr = self.hl();
+        self.a = self.read_mem8(addr);
+        let hl = self.hl();
+        self.set_hl(hl.wrapping_add(1));
+    }
+
+    // LD A, (HL-)
+    fn ldd_a_hl(&mut self) {
+        let addr = self.hl();
+        self.a = self.read_mem8(addr);
+        let hl = self.hl();
+        self.set_hl(hl.wrapping_sub(1));
+    }
+
+    // LD (BC), A
+    fn ld_ind_bc_a(&mut self) {
+        let addr = self.bc();
+        let a = self.a;
+        self.write_mem8(addr, a);
+    }
+
+    // LD (DE), A
+    fn ld_ind_de_a(&mut self) {
+        let addr = self.de();
+        let a = self.a;
+        self.write_mem8(addr, a);
+    }
+
+    // LD A, (BC)
+    fn ld_a_ind_bc(&mut self) {
+        let bc = self.bc();
+        self.a = self.read_mem8(bc);
+    }
+
+    // LD A, (DE)
+    fn ld_a_ind_de(&mut self) {
+        let de = self.de();
+        self.a = self.read_mem8(de);
+    }
+
     fn fetch_and_exec(&mut self) {
         let opcode = self.read_d8();
         let reg = opcode & 7;
