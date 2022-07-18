@@ -235,7 +235,7 @@ impl CPU {
         (hi as u16) << 8 | lo as u16
     }
 
-    // NOP
+    // NOP: No operation.
     fn nop(&mut self) {}
 
     // LD r16, d16
@@ -347,6 +347,158 @@ impl CPU {
         self.set_f_n(true);
         self.set_f_h(a & 0x0f < val & 0x0f);
         self.set_f_c(a < val);
+    }
+
+    // DAA: Decimal adjust register A
+    fn daa(&mut self) {
+        let mut a = self.a;
+
+        if !self.f_n() {
+            if self.f_c() || a > 0x99 {
+                a = a.wrapping_add(0x60);
+                self.set_f_c(true);
+            }
+            if self.f_h() || a & 0x0f > 0x09 {
+                a = a.wrapping_add(0x06);
+            }
+        } else {
+            if self.f_c() {
+                a = a.wrapping_sub(0x60);
+            }
+            if self.f_h() {
+                a = a.wrapping_sub(0x06);
+            }
+        }
+
+        self.a = a;
+
+        self.set_f_z(a == 0);
+        self.set_f_h(false);
+    }
+
+    // CPL: Complement A
+    fn cpl(&mut self) {
+        self.a = !self.a;
+        self.set_f_n(true);
+        self.set_f_h(true);
+    }
+
+    // CCF: Complement carry flag
+    fn ccf(&mut self) {
+        self.set_f_n(false);
+        self.set_f_h(false);
+
+        let c = self.f_c();
+        self.set_f_c(!c);
+    }
+
+    // SCF: Set carry flag
+    fn scf(&mut self) {
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(true);
+    }    
+    
+    fn _add(&mut self, val: u8) {
+        let half_carry = (self.a & 0xf) + (val & 0xf) > 0xf;
+        let (res, carry) = self.a.overflowing_add(val);
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(half_carry);
+        self.set_f_c(carry);
+    }
+
+    // ADD r8
+    fn add_r8(&mut self, reg: u8) {
+        let val = self.read_r8(reg);
+        self._add(val);
+    }
+
+    // ADC r8
+    fn adc_r8(&mut self, reg: u8) {
+        let val = self.read_r8(reg);
+        self._adc(val);
+    }
+
+    // SUB r8
+    fn sub_r8(&mut self, reg: u8) {
+        let val = self.read_r8(reg);
+        self._sub(val);
+    }
+
+    // SBC r8
+    fn sbc_r8(&mut self, reg: u8) {
+        let val = self.read_r8(reg);
+        self._sbc(val);
+    }
+
+    // ADD d8
+    fn add_d8(&mut self) {
+        let val = self.read_d8();
+        self._add(val);
+    }
+
+    fn _sub(&mut self, val: u8) {
+        let half_carry = (self.a & 0xf) < (val & 0xf);
+        let (res, carry) = self.a.overflowing_sub(val);
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(true);
+        self.set_f_h(half_carry);
+        self.set_f_c(carry);
+    }
+
+    // SUB d8
+    fn sub_d8(&mut self) {
+        let val = self.read_d8();
+        self._sub(val);
+    }
+
+    fn _adc(&mut self, val: u8) {
+        let c = if self.f_c() { 1 } else { 0 };
+
+        let res = self.a.wrapping_add(val).wrapping_add(c);
+        let half_carry = (self.a & 0xf) + (val & 0xf) + c > 0xf;
+        let carry = (self.a as u16) + (val as u16) + (c as u16) > 0xff;
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(half_carry);
+        self.set_f_c(carry);
+    }
+
+    // ADC d8
+    fn adc_d8(&mut self) {
+        let val = self.read_d8();
+        self._adc(val);
+    }
+
+    fn _sbc(&mut self, val: u8) {
+        let c = if self.f_c() { 1 } else { 0 };
+
+        let res = self.a.wrapping_sub(val).wrapping_sub(c);
+        let half_carry = (self.a & 0xf) < (val & 0xf) + c;
+        let carry = (self.a as u16) < (val as u16) + (c as u16);
+
+        self.a = res;
+
+        self.set_f_z(res == 0);
+        self.set_f_n(true);
+        self.set_f_h(half_carry);
+        self.set_f_c(carry);
+    }
+
+    // SBC d8
+    fn sbc_d8(&mut self) {
+        let val = self.read_d8();
+        self._sbc(val);
     }
 
     fn fetch_and_exec(&mut self) {
