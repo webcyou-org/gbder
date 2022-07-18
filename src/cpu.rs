@@ -611,6 +611,138 @@ impl CPU {
         self.a = self.read_mem8(de);
     }
 
+    // Test bit
+    fn bit(&mut self, pos: u8, reg: u8) {
+        let z = (self.read_r8(reg) >> pos & 1) == 0;
+        self.set_f_z(z);
+        self.set_f_n(false);
+        self.set_f_h(true);
+    }
+
+    // Set bit
+    fn set(&mut self, pos: u8, reg: u8) {
+        let val = self.read_r8(reg);
+        self.write_r8(reg, val | (1 << pos));
+    }
+
+    // Reset bit
+    fn res(&mut self, pos: u8, reg: u8) {
+        let val = self.read_r8(reg);
+        self.write_r8(reg, val & !(1 << pos));
+    }
+
+    fn _rl(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = (orig << 1) | (if self.f_c() { 1 } else { 0 });
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(orig >> 7 & 1 == 1);
+    }
+
+    // Rotate left through carry
+    fn rl(&mut self, reg: u8) {
+        self._rl(reg);
+    }
+
+    fn _rlc(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = orig.rotate_left(1);
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(orig >> 7 & 1 == 1);
+    }
+
+    // Rotate left
+    fn rlc(&mut self, reg: u8) {
+        self._rlc(reg);
+    }
+
+    fn _rr(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = (orig >> 1) | (if self.f_c() { 1 } else { 0 } << 7);
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(orig & 1 == 1);
+    }
+
+    // Rotate right through carry
+    fn rr(&mut self, reg: u8) {
+        self._rr(reg);
+    }
+
+    fn _rrc(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = orig.rotate_right(1);
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(orig & 1 == 1);
+    }
+
+    // Rotate right
+    fn rrc(&mut self, reg: u8) {
+        self._rrc(reg);
+    }
+
+    // Shift left into carry
+    fn sla(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = orig << 1;
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(orig & 0x80 > 0);
+    }
+
+    // Shift right into carry
+    fn sra(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = (orig >> 1) | (orig & 0x80);
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(orig & 1 > 0);
+    }
+
+    // Swap low/hi-nibble
+    fn swap(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = ((orig & 0x0f) << 4) | ((orig & 0xf0) >> 4);
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(false);
+    }
+
+    // Shift right through carry
+    fn srl(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = orig >> 1;
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_n(false);
+        self.set_f_h(false);
+        self.set_f_c(orig & 1 == 1);
+    }
+    
     fn fetch_and_exec(&mut self) {
         let opcode = self.read_d8();
         let reg = opcode & 7;
