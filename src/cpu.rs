@@ -766,18 +766,18 @@ impl CPU {
         }
     }
 
-    /// Unconditional jump to d16
+    // Unconditional jump to d16
     fn jp_d16(&mut self) {
         let address = self.read_d16();
         self._jp(address);
     }
 
-    /// Unconditional jump to HL
+    // Unconditional jump to HL
     fn jp_hl(&mut self) {
         self.pc = self.hl();
     }
 
-    /// Jump to pc+d8 if CC
+    // Jump to pc+d8 if CC
     fn jr_cc_d8(&mut self, cci: u8) {
         let offset = self.read_d8() as i8;
         if self.cc(cci) {
@@ -795,6 +795,279 @@ impl CPU {
         let offset = self.read_d8() as i8;
         self._jr(offset);
     }    
+
+    fn ld_io_d8_a(&mut self) {
+        let offset = self.read_d8() as u16;
+        let addr = 0xff00 | offset;
+        let a = self.a;
+    
+        self.write_mem8(addr, a);
+    }
+
+    fn ld_a_io_d8(&mut self) {
+        let offset = self.read_d8() as u16;
+        let addr = 0xff00 | offset;
+
+        self.a = self.read_mem8(addr);
+    }
+
+    fn ld_io_c_a(&mut self) {
+        let addr = 0xff00 | self.c as u16;
+        let a = self.a;
+
+        self.write_mem8(addr, a);
+    }
+
+    fn ld_a_io_c(&mut self) {
+        let addr = 0xff00 | self.c as u16;
+
+        self.a = self.read_mem8(addr);
+    }
+
+    // LD r8, d8
+    fn ld_r8_d8(&mut self, reg: u8) {
+        let imm = self.read_d8();
+
+        self.write_r8(reg, imm);
+    }
+
+    // INC r8
+    fn inc_r8(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = orig.wrapping_add(1);
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_h(orig & 0x0f == 0x0f);
+        self.set_f_n(false);
+    }
+
+    // DEC r8
+    fn dec_r8(&mut self, reg: u8) {
+        let orig = self.read_r8(reg);
+        let res = orig.wrapping_sub(1);
+        self.write_r8(reg, res);
+
+        self.set_f_z(res == 0);
+        self.set_f_h(orig & 0x0f == 0x00);
+        self.set_f_n(true);
+    }
+
+    // LD r8, r8
+    fn ld_r8_r8(&mut self, reg1: u8, reg2: u8) {  
+        let val = self.read_r8(reg2);
+        self.write_r8(reg1, val);
+    }
+
+    fn _call(&mut self, addr: u16) {
+        self.sp = self.sp.wrapping_sub(2);
+        let sp = self.sp;
+        let pc = self.pc;
+
+        self.cycle += 4;
+
+        self.write_mem16(sp, pc);
+        self.pc = addr;
+    }
+
+    // CALL d16
+    fn call_d16(&mut self) {
+        let addr = self.read_d16();
+        self._call(addr);
+    }
+
+    // CALL CC, d16
+    fn call_cc_d16(&mut self, cci: u8) {
+        let addr = self.read_d16();
+
+        if self.cc(cci) {
+            self._call(addr);
+        }
+    }
+
+    fn rst(&mut self, addr: u8) {    
+        self._call(addr as u16);
+    }
+
+    fn _ret(&mut self) {
+        let sp = self.sp;
+        self.pc = self.read_mem16(sp);
+        self.sp = self.sp.wrapping_add(2);
+
+        self.cycle += 4;
+    }
+
+    // RET
+    fn ret(&mut self) {    
+        self._ret();
+    }
+
+    // RET CC
+    fn ret_cc(&mut self, cci: u8) {     
+        self.cycle += 4;
+
+        if self.cc(cci) {
+            self._ret();
+        }
+    }
+
+    // PUSH BC
+    fn push_bc(&mut self) {
+        self.sp = self.sp.wrapping_sub(2);
+        let val = self.bc();
+        let sp = self.sp;
+
+        self.cycle += 4;
+
+        self.write_mem16(sp, val);
+    }
+
+    // PUSH DE
+    fn push_de(&mut self) {     
+        self.sp = self.sp.wrapping_sub(2);
+        let val = self.de();
+        let sp = self.sp;
+
+        self.cycle += 4;
+
+        self.write_mem16(sp, val);
+    }
+
+    // PUSH HL
+    fn push_hl(&mut self) {
+        self.sp = self.sp.wrapping_sub(2);
+        let val = self.hl();
+        let sp = self.sp;
+
+        self.cycle += 4;
+        self.write_mem16(sp, val);
+    }
+
+    // PUSH AF
+    fn push_af(&mut self) {      
+        self.sp = self.sp.wrapping_sub(2);
+        let val = self.af();
+        let sp = self.sp;
+
+        self.cycle += 4;
+
+        self.write_mem16(sp, val);
+    }
+
+    // POP BC
+    fn pop_bc(&mut self) {      
+        let sp = self.sp;
+        let val = self.read_mem16(sp);
+        self.set_bc(val);
+        self.sp = self.sp.wrapping_add(2);
+    }
+
+    // POP DE
+    fn pop_de(&mut self) {
+        let sp = self.sp;
+        let val = self.read_mem16(sp);
+        self.set_de(val);
+        self.sp = self.sp.wrapping_add(2);
+    }
+
+    // POP HL
+    fn pop_hl(&mut self) {    
+        let sp = self.sp;
+        let val = self.read_mem16(sp);
+        self.set_hl(val);
+        self.sp = self.sp.wrapping_add(2);
+    }
+
+    /// POP AF
+    fn pop_af(&mut self) {
+        let sp = self.sp;
+        // lower nibble of F is always zero
+        let val = self.read_mem16(sp) & 0xfff0;
+        self.set_af(val);
+        self.sp = self.sp.wrapping_add(2);
+    }
+
+    fn rlca(&mut self) {
+        self._rlc(7);
+        self.set_f_z(false);
+    }
+
+    fn rla(&mut self) {
+        self._rl(7);
+        self.set_f_z(false);
+    }
+
+    fn rrca(&mut self) {
+        self._rrc(7);
+        self.set_f_z(false);
+    }
+
+    fn rra(&mut self) {
+        self._rr(7);
+        self.set_f_z(false);
+    }
+
+    fn inc_r16(&mut self, reg: u8) {
+        let val = self.read_r16(reg);
+        self.write_r16(reg, val.wrapping_add(1));
+
+        self.cycle += 4;
+    }
+
+    fn dec_r16(&mut self, reg: u8) {
+        let val = self.read_r16(reg);
+        self.write_r16(reg, val.wrapping_sub(1));
+
+        self.cycle += 4;
+    }
+
+    fn ld_ind_d16_a(&mut self) {
+        let addr = self.read_d16();
+        let a = self.a;
+        self.write_mem8(addr, a);
+    }
+
+    fn ld_a_ind_d16(&mut self) {
+        let addr = self.read_d16();
+        self.a = self.read_mem8(addr);
+    }
+
+    // Disable interrupt
+    fn di(&mut self) {
+        self.ime = false;
+    }
+
+    // Enable interrupt
+    fn ei(&mut self) {
+        self.ime = true;
+    }
+
+    // Enable interrupt and return
+    fn reti(&mut self) {
+        self.ime = true;
+        self._ret();
+    }
+
+    // Prefixed instructions
+    fn prefix(&mut self) {
+        let opcode = self.read_d8();
+        let pos = opcode >> 3 & 0x7;
+        let reg = opcode & 0x7;
+
+        match opcode {
+            0x00..=0x07 => self.rlc(reg),
+            0x08..=0x0f => self.rrc(reg),
+            0x10..=0x17 => self.rl(reg),
+            0x18..=0x1f => self.rr(reg),
+            0x20..=0x27 => self.sla(reg),
+            0x28..=0x2f => self.sra(reg),
+            0x30..=0x37 => self.swap(reg),
+            0x38..=0x3f => self.srl(reg),
+            0x40..=0x7f => self.bit(pos, reg),
+            0x80..=0xbf => self.res(pos, reg),
+            0xc0..=0xff => self.set(pos, reg),
+        }
+    }
 
     fn fetch_and_exec(&mut self) {
         let opcode = self.read_d8();
