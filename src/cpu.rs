@@ -1081,8 +1081,149 @@ impl CPU {
         match opcode {
             // NOP
             0x00 => self.nop(),
+
             // LD r16, d16
             0x01 | 0x11 | 0x21 | 0x31 => self.ld_r16_d16(opcode >> 4),
+
+            // LD (d16), SP
+            0x08 => self.ld_ind_d16_sp(),
+
+            // LD SP, HL
+            0xf9 => self.ld_sp_hl(),
+
+            // LD A, (r16)
+            0x02 => self.ld_ind_bc_a(),
+            0x12 => self.ld_ind_de_a(),
+            0x0a => self.ld_a_ind_bc(),
+            0x1a => self.ld_a_ind_de(),
+
+            // PUSH r16
+            0xc5 => self.push_bc(),
+            0xd5 => self.push_de(),
+            0xe5 => self.push_hl(),
+            0xf5 => self.push_af(),
+
+            // POP r16
+            0xc1 => self.pop_bc(),
+            0xd1 => self.pop_de(),
+            0xe1 => self.pop_hl(),
+            0xf1 => self.pop_af(),
+
+            // Conditional absolute jump
+            0xc2 | 0xd2 | 0xca | 0xda => self.jp_cc_d8(reg2),
+
+            // Unconditional absolute jump
+            0xc3 => self.jp_d16(),
+            0xe9 => self.jp_hl(),
+
+            // Conditional relative jump
+            0x20 | 0x30 | 0x28 | 0x38 => self.jr_cc_d8(reg2 - 4),
+
+            // Unconditional relative jump
+            0x18 => self.jr_d8(),
+
+            // Bit rotate on A
+            0x07 => self.rlca(),
+            0x17 => self.rla(),
+            0x0f => self.rrca(),
+            0x1f => self.rra(),
+
+            // Arithmethic/logical operation on 16-bit register
+            0x09 | 0x19 | 0x29 | 0x39 => self.add_hl_r16(opcode >> 4),
+            0xe8 => self.add_sp_d8(),
+            0xf8 => self.ld_hl_sp_d8(),
+
+            // Arithmethic/logical operation on 8-bit register
+            0x80..=0x87 => self.add_r8(reg),
+            0x88..=0x8f => self.adc_r8(reg),
+            0x90..=0x97 => self.sub_r8(reg),
+            0x98..=0x9f => self.sbc_r8(reg),
+            0xa0..=0xa7 => self.and_r8(reg),
+            0xb0..=0xb7 => self.or_r8(reg),
+            0xa8..=0xaf => self.xor_r8(reg),
+            0xb8..=0xbf => self.cp_r8(reg),
+
+            // DAA
+            0x27 => self.daa(),
+
+            // CPL
+            0x2f => self.cpl(),
+
+            // SCF, CCF
+            0x37 => self.scf(),
+            0x3f => self.ccf(),
+
+            // Arithmethic/logical operation on A
+            0xc6 => self.add_d8(),
+            0xd6 => self.sub_d8(),
+            0xe6 => self.and_d8(),
+            0xf6 => self.or_d8(),
+            0xce => self.adc_d8(),
+            0xde => self.sbc_d8(),
+            0xee => self.xor_d8(),
+            0xfe => self.cp_d8(),
+
+            // LDI, LDD
+            0x22 => self.ldi_hl_a(),
+            0x32 => self.ldd_hl_a(),
+            0x2a => self.ldi_a_hl(),
+            0x3a => self.ldd_a_hl(),
+
+            // LD IO port
+            0xe0 => self.ld_io_d8_a(),
+            0xf0 => self.ld_a_io_d8(),
+            0xe2 => self.ld_io_c_a(),
+            0xf2 => self.ld_a_io_c(),
+
+            // LD r8, d8
+            0x06 | 0x0e | 0x16 | 0x1e | 0x26 | 0x2e | 0x36 | 0x3e => self.ld_r8_d8(reg2),
+
+            // INC r8
+            0x04 | 0x0c | 0x14 | 0x1c | 0x24 | 0x2c | 0x34 | 0x3c => self.inc_r8(reg2),
+
+            // DEC r8
+            0x05 | 0x0d | 0x15 | 0x1d | 0x25 | 0x2d | 0x35 | 0x3d => self.dec_r8(reg2),
+
+            // LD r8, r8
+            0x40..=0x75 | 0x77..=0x7f => self.ld_r8_r8(reg2, reg),
+
+            // LD (d16), A
+            0xea => self.ld_ind_d16_a(),
+
+            // LD A, (d16)
+            0xfa => self.ld_a_ind_d16(),
+
+            // INC, DEC r16
+            0x03 | 0x13 | 0x23 | 0x33 => self.inc_r16(opcode >> 4),
+            0x0b | 0x1b | 0x2b | 0x3b => self.dec_r16(opcode >> 4),
+
+            // Unconditional call
+            0xcd => self.call_d16(),
+
+            // Conditional call
+            0xc4 | 0xd4 | 0xcc | 0xdc => self.call_cc_d16(reg2),
+
+            // Unconditional ret
+            0xc9 => self.ret(),
+
+            // Conditional ret
+            0xc0 | 0xd0 | 0xc8 | 0xd8 => self.ret_cc(reg2),
+
+            // RETI
+            0xd9 => self.reti(),
+
+            // RST
+            0xc7 | 0xcf | 0xd7 | 0xdf | 0xe7 | 0xef | 0xf7 | 0xff => self.rst(opcode - 0xc7),
+
+            // DI, EI
+            0xf3 => self.di(),
+            0xfb => self.ei(),
+
+            // CB prefixed
+            0xcb => self.prefix(),
+
+            // HALT
+            0x76 => self.halt(),
             _ => println!("Unimplemented opcode"),
             // _ => panic!("Unimplemented opcode 0x{:x}", opcode),
         }
