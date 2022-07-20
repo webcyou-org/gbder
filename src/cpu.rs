@@ -210,6 +210,17 @@ impl CPU {
         imm
     }
 
+    // Checks branch condition
+    fn cc(&self, idx: u8) -> bool {
+        match idx {
+            0 => !self.f_z(),
+            1 => self.f_z(),
+            2 => !self.f_c(),
+            3 => self.f_c(),
+            _ => panic!("Invalid branch condition index: {}", idx),
+        }
+    }
+
     // 8-bit value memory
     fn write_mem8(&mut self, addr: u16, val: u8) {
         self.mmu.write(addr, val);
@@ -742,7 +753,49 @@ impl CPU {
         self.set_f_h(false);
         self.set_f_c(orig & 1 == 1);
     }
-    
+
+    fn _jp(&mut self, addr: u16) {
+        self.pc = addr;
+        self.cycle += 4;
+    }
+
+    fn jp_cc_d8(&mut self, cci: u8) {
+        let addr = self.read_d16();
+        if self.cc(cci) {
+            self._jp(addr);
+        }
+    }
+
+    /// Unconditional jump to d16
+    fn jp_d16(&mut self) {
+        let address = self.read_d16();
+        self._jp(address);
+    }
+
+    /// Unconditional jump to HL
+    fn jp_hl(&mut self) {
+        self.pc = self.hl();
+    }
+
+    /// Jump to pc+d8 if CC
+    fn jr_cc_d8(&mut self, cci: u8) {
+        let offset = self.read_d8() as i8;
+        if self.cc(cci) {
+            self._jr(offset);
+        }
+    }
+
+    fn _jr(&mut self, offset: i8) {
+        self.pc = self.pc.wrapping_add(offset as u16);
+        self.cycle += 4;
+    }
+
+    /// Jump to pc+d8
+    fn jr_d8(&mut self) {
+        let offset = self.read_d8() as i8;
+        self._jr(offset);
+    }    
+
     fn fetch_and_exec(&mut self) {
         let opcode = self.read_d8();
         let reg = opcode & 7;
