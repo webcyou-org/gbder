@@ -1,4 +1,6 @@
 use std::env;
+
+use std::thread;
 use std::time;
 
 // use gbder::cartridge::Cartridge;
@@ -25,16 +27,29 @@ fn main() {
 
     println!("{:?}", cpu.step() as u32);
 
-    let now = time::Instant::now();
-    println!("now: {:?}", now);
+    'running: loop {
+        let now = time::Instant::now();
+        let mut elapsed_tick: u32 = 0;
 
-    cpu.debug();
-    cpu.debug();
-    cpu.debug();
-    cpu.debug();
-    cpu.debug();
+        // Emulate one frame
+        while elapsed_tick < 456 * (144 + 10) {
+            elapsed_tick += cpu.step() as u32;
+        }
 
-    standby(&mut cpu);
+        let wait = time::Duration::from_micros(1000000 / 60);
+        let elapsed = now.elapsed();
+
+        if wait > elapsed {
+            thread::sleep(wait - elapsed);
+        }
+    }
+    // cpu.debug();
+    // cpu.debug();
+    // cpu.debug();
+    // cpu.debug();
+    // cpu.debug();
+
+    // standby(&mut cpu);
 }
 
 fn standby(cpu: &mut CPU) {
