@@ -283,6 +283,13 @@ impl Cartridge {
         }
     }
 
+    pub fn read_save_file(&mut self, fname: &str) {
+        if let Ok(mut file) = File::open(fname) {
+            self.ram = Vec::new();
+            file.read_to_end(&mut self.ram).unwrap();
+        }
+    }    
+
     pub fn debug(&mut self) {
         println!("{}", self.title_to_string());
         println!("{}", self.rom_to_string());
