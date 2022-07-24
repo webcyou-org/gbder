@@ -10,3 +10,16 @@
 </p>
 
 <p><img src="https://user-images.githubusercontent.com/1584153/180633837-6a6b4f32-5526-45d8-ab9c-53e48a82d779.png"></p>
+
+
+## Requirements
+
+- Language: Rust
+- Graphics Library: SDL2
+
+## Usage
+
+```
+$ cargo run YOUR_GAMEBOY_ROM.gb
+```
+
