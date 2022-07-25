@@ -129,7 +129,7 @@ impl CPU {
 
         if self.ime {
             self.cycle = 0;
-            // self.check_irqs();
+            self.check_irqs();
             self.mmu.update(self.cycle);
             total_cycle += self.cycle;
         }        
@@ -253,7 +253,6 @@ impl CPU {
     fn ld_r16_d16(&mut self, reg: u8) {
         let val = self.read_d16();    
         self.write_r16(reg, val);
-        println!("ld_r16_d16");
     }
 
     // LD (d16), SP
@@ -1069,14 +1068,48 @@ impl CPU {
         }
     }
 
+        // Checks IRQs and execute ISRs if requested.
+        fn check_irqs(&mut self) {
+            // Bit 0 has the highest priority
+            for i in 0..5 {
+                let irq = self.mmu.int_flag & (1 << i) > 0;
+                let ie = self.mmu.int_enable & (1 << i) > 0;
+    
+                // If interrupt is requested and enabled
+                if irq && ie {
+                    self.call_isr(i);
+                    break;
+                }
+            }
+        }
+    
+        // Calls requested interrupt service routine.
+        fn call_isr(&mut self, id: u8) {
+            // Reset corresponding bit in IF
+            self.mmu.int_flag &= !(1 << id);
+            // Clear IME (disable any further interrupts)
+            self.ime = false;
+            self.halted = false;
+    
+            let isr: u16 = match id {
+                0 => 0x40,
+                1 => 0x48,
+                2 => 0x50,
+                3 => 0x80,
+                4 => 0x70,
+                _ => panic!("Invalid IRQ id {}", id),
+            };
+    
+            self.cycle += 8;    
+            self._call(isr);
+        }
+
     fn fetch_and_exec(&mut self) {
         let opcode = self.read_d8();
         let reg = opcode & 7;
         let reg2 = opcode >> 3 & 7;
 
-        println!("opcode: {:?}", opcode);
-        println!("reg: {:?}", reg);
-        println!("reg2: {:?}", reg2);
+        // println!("opcode: {:?}", opcode);
 
         match opcode {
             // NOP
@@ -1257,8 +1290,5 @@ impl CPU {
         println!("flag n: {:?}", self.f_n());
         println!("flag c: {:?}", self.f_c());
         println!("flag h: {:?}", self.f_h());
-
-        // let tick = self.step();
-        // println!("tick: {}", tick);
     }
 }
