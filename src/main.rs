@@ -16,12 +16,39 @@ use sdl2::keyboard::Keycode;
 
 mod cartridge;
 mod bus;
+mod joypad;
 mod mmu;
 mod ppu;
 mod cpu;
+mod timer;
+
 
 // use mmu::MMU;
 use cpu::CPU;
+
+fn translate_keycode(key: Keycode) -> Option<joypad::Key> {
+    match key {
+        Keycode::Down => Some(joypad::Key::Down),
+        Keycode::Up => Some(joypad::Key::Up),
+        Keycode::Left => Some(joypad::Key::Left),
+        Keycode::Right => Some(joypad::Key::Right),
+        Keycode::Return => Some(joypad::Key::Start),
+        Keycode::RShift => Some(joypad::Key::Select),
+        Keycode::X => Some(joypad::Key::A),
+        Keycode::Z => Some(joypad::Key::B),
+        _ => None,
+    }
+}
+
+// Handles key down event.
+fn handle_keydown(cpu: &mut cpu::CPU, key: Keycode) {
+    translate_keycode(key).map(|k| cpu.mmu.joypad.keydown(k));
+}
+
+// Handles key up event.
+fn handle_keyup(cpu: &mut cpu::CPU, key: Keycode) {
+    translate_keycode(key).map(|k| cpu.mmu.joypad.keyup(k));
+}
 
 fn rom_fname() -> String {
     env::args().nth(1).unwrap()
@@ -83,7 +110,7 @@ fn main() {
                     }
                 }
             })
-            .unwrap();        
+            .unwrap();
 
         canvas.clear();
         canvas.copy(&texture, None, None).unwrap();
@@ -95,6 +122,14 @@ fn main() {
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     break 'running
                 },
+                Event::KeyDown {
+                    keycode: Some(keycode),
+                    ..
+                } => handle_keydown(&mut cpu, keycode),
+                Event::KeyUp {
+                    keycode: Some(keycode),
+                    ..
+                } => handle_keyup(&mut cpu, keycode),
                 _ => {}
             }
         }
