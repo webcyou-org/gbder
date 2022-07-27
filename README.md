@@ -10,9 +10,9 @@
 </p>
 
 <p align="center">
-   <img src="https://user-images.githubusercontent.com/1584153/181271214-3928f98b-1f8b-45b0-ade0-45dd191a3ce9.png">
-   <img src="https://user-images.githubusercontent.com/1584153/181271227-9002c530-55fd-42d8-b6ee-a4fc586c78f4.png">
-   <img src="https://user-images.githubusercontent.com/1584153/181271248-b7a2379e-ec40-40e6-8080-01b58e464575.png">
+   <img width="30%" src="https://user-images.githubusercontent.com/1584153/181271214-3928f98b-1f8b-45b0-ade0-45dd191a3ce9.png">
+   <img width="30%" src="https://user-images.githubusercontent.com/1584153/181271227-9002c530-55fd-42d8-b6ee-a4fc586c78f4.png">
+   <img width="30%" src="https://user-images.githubusercontent.com/1584153/181271248-b7a2379e-ec40-40e6-8080-01b58e464575.png">
 </p>
 
 
