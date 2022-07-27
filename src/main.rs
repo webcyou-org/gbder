@@ -1,5 +1,4 @@
 use std::env;
-// use std::path::PathBuf;
 
 extern crate sdl2;
 
@@ -11,8 +10,6 @@ use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::Canvas;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-// use sdl2::sys::Window;
-// use std::time::Duration;
 
 mod cartridge;
 mod bus;
@@ -141,20 +138,3 @@ fn main() {
         }
      }
 }
-
-// fn standby(cpu: &mut CPU) {
-//     println!("step to n key press");
-
-//     let mut word = String::new();
-//     std::io::stdin().read_line(&mut word).ok();
-//     let answer = word.trim().to_string();
-
-//     match &*answer {
-//         "n" => {
-//             println!("------------cpu step debug----------------");
-//             cpu.debug();
-//             standby(cpu);
-//         },
-//         _ => println!("------------cpu step debug end----------------"),
-//     }
-// }

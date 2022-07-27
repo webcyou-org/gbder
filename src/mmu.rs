@@ -96,10 +96,7 @@ impl MMU {
             // Joypad
             0xff00 => self.joypad.read(addr),
             // Timer
-            0xff04..=0xff07 => {
-                println!("Timer read: {:?}", addr);
-                0
-            },
+            0xff04..=0xff07 => self.timer.read(addr),
             // Interrupt flag
             0xff0f => self.int_flag,
             // PPU

@@ -1109,8 +1109,6 @@ impl CPU {
         let reg = opcode & 7;
         let reg2 = opcode >> 3 & 7;
 
-        // println!("opcode: {:?}", opcode);
-
         match opcode {
             // NOP
             0x00 => self.nop(),
@@ -1264,31 +1262,5 @@ impl CPU {
 
     fn halt(&mut self) {
         self.halted = true;
-    }
-
-    pub fn debug(&mut self) {
-        // self.set_af(0x10ff);
-        // self.set_f_z(true);
-        // self.set_f_n(true);
-        // self.set_f_c(true); 
-
-        self.step();
-
-        println!("af: {:?}", self.af());
-        println!("a: {:?}", self.a);
-        println!("f: {:?}", self.f);
-        println!("b: {:?}", self.b);
-        println!("c: {:?}", self.c);
-        println!("d: {:?}", self.d);
-        println!("e: {:?}", self.e);
-        println!("h: {:?}", self.h);
-        println!("l: {:?}", self.l);
-        println!("pc: {:?}", self.pc);
-        println!("sp: {:?}", self.sp);
-
-        println!("flag z: {:?}", self.f_z());
-        println!("flag n: {:?}", self.f_n());
-        println!("flag c: {:?}", self.f_c());
-        println!("flag h: {:?}", self.f_h());
     }
 }
