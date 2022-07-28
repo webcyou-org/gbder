@@ -19,8 +19,6 @@ mod ppu;
 mod cpu;
 mod timer;
 
-
-// use mmu::MMU;
 use cpu::CPU;
 
 fn translate_keycode(key: Keycode) -> Option<joypad::Key> {
@@ -50,13 +48,6 @@ fn handle_keyup(cpu: &mut cpu::CPU, key: Keycode) {
 fn rom_fname() -> String {
     env::args().nth(1).unwrap()
 }
-
-// Returns save filename for current ROM.
-// fn save_fname() -> String {
-//     let mut path_buf = PathBuf::from(rom_fname());
-//     path_buf.set_extension("sav");
-//     path_buf.to_str().unwrap().to_string()
-// }
 
 fn sdl_init(sdl_context: &Sdl) -> Canvas<sdl2::video::Window>  {
     let video_subsystem = sdl_context.video().unwrap();
