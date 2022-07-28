@@ -112,6 +112,7 @@ impl MMU {
     pub fn update(&mut self, cycle: u8) {
         self.cartridge.update(cycle);
         self.ppu.update(cycle);
+        self.timer.update(cycle);
         self.joypad.update(cycle);
 
         if self.ppu.irq_vblank {
