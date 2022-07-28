@@ -27,3 +27,13 @@
 $ cargo run YOUR_GAMEBOY_ROM.gb
 ```
 
+## Status
+
+- [ ] Cartridge
+  - [x] Cartridge loading
+  - [x] Data
+  - [x] MBC1
+  - [ ] MBC3
+  - [ ] MBC5
+  - [ ] MBC6
+- [ ] APU
